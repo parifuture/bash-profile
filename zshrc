@@ -1,20 +1,21 @@
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
-#go
-export GOPATH=$HOME/go
-export GOBIN=$GOPATH/bin
-export PATH=$PATH:$GOPATH
-export PATH=$PATH:$GOBIN
-
 # Path to your oh-my-zsh installation.
-export ZSH="/Users/parik/.oh-my-zsh"
+export ZSH="/Users/parikshit/.oh-my-zsh"
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="robbyrussell"
+ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
@@ -29,14 +30,13 @@ ZSH_THEME="robbyrussell"
 # Case-sensitive completion must be off. _ and - will be interchangeable.
 # HYPHEN_INSENSITIVE="true"
 
-# Uncomment the following line to disable bi-weekly auto-update checks.
-# DISABLE_AUTO_UPDATE="true"
-
-# Uncomment the following line to automatically update without prompting.
-# DISABLE_UPDATE_PROMPT="true"
+# Uncomment one of the following lines to change the auto-update behavior
+# zstyle ':omz:update' mode disabled  # disable automatic updates
+# zstyle ':omz:update' mode auto      # update automatically without asking
+# zstyle ':omz:update' mode reminder  # just remind me to update when it's time
 
 # Uncomment the following line to change how often to auto-update (in days).
-# export UPDATE_ZSH_DAYS=13
+# zstyle ':omz:update' frequency 13
 
 # Uncomment the following line if pasting URLs and other text is messed up.
 # DISABLE_MAGIC_FUNCTIONS="true"
@@ -51,8 +51,9 @@ ZSH_THEME="robbyrussell"
 # ENABLE_CORRECTION="true"
 
 # Uncomment the following line to display red dots whilst waiting for completion.
-# Caution: this setting can cause issues with multiline prompts (zsh 5.7.1 and newer seem to work)
-# See https://github.com/ohmyzsh/ohmyzsh/issues/5765
+# You can also set it to another string to have that shown instead of the default red dots.
+# e.g. COMPLETION_WAITING_DOTS="%F{yellow}waiting...%f"
+# Caution: this setting can cause issues with multiline prompts in zsh < 5.7.1 (see #5765)
 # COMPLETION_WAITING_DOTS="true"
 
 # Uncomment the following line if you want to disable marking untracked files
@@ -77,7 +78,6 @@ ZSH_THEME="robbyrussell"
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(brew git zsh-syntax-highlighting zsh-autosuggestions autojump colored-man-pages)
-
 source $ZSH/oh-my-zsh.sh
 
 # User configuration
@@ -103,8 +103,10 @@ source $ZSH/oh-my-zsh.sh
 # For a full list of active aliases, run `alias`.
 #
 # Example aliases
-# alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
+alias zshconfig="code ~/.zshrc"
+alias ll="exa -l -g --icons"
+alias lla="ll -a"
 
 # Individual history per tab
 unsetopt inc_append_history
@@ -115,37 +117,66 @@ unsetopt share_history
 HISTSIZE=5000
 SAVEHIST=5000
 
-alias vaultstart="unset AWS_VAULT &&  aws-vault exec lending-dev --duration 12h"
-alias debug_brg_snbx="HANDLE_GET_DOCUSIGN_URL_BY_ECLOSE=true PROFILE_KEY=default AUTO_ASSIGNMENT_UI=true ENABLE_AUTO_ASSIGNMENT=true PROFILE_KEY=default SHOW_OPS_DESK_ASSIGNEE=true USE_PIPELINE_FILTERS=true USE_ELASTIC_SEARCH=true IS_NOTARY_ACTIVE=true USE_DISPLAY_CONFIGS=true ATTACH_DOCS_IN_ECLOSE=true IS_BLEND_BRIDGE_TASKS_ENABLED=true USE_NEW_MFA_FLOW=true USE_NEW_ADDITIONAL_DOCS_MODAL=true ELASTICSEARCH_URL=\"https://vpc-blend-search-elasticsearch-cahqyh6qgewktrpz3mhkwecf3e.us-east-1.es.amazonaws.com\" npm run debugWithSandbox"
-alias no_auto_debug_brg_snbx="PROFILE_KEY=default PROFILE_KEY=default SHOW_OPS_DESK_ASSIGNEE=true USE_PIPELINE_FILTERS=true USE_ELASTIC_SEARCH=true IS_NOTARY_ACTIVE=true USE_DISPLAY_CONFIGS=true ATTACH_DOCS_IN_ECLOSE=true IS_BLEND_BRIDGE_TASKS_ENABLED=true USE_NEW_MFA_FLOW=true USE_NEW_ADDITIONAL_DOCS_MODAL=true ELASTICSEARCH_URL=\"https://ade62015f8c2f4512a97589f3c80adf5-1330618854.us-east-1.elb.amazonaws.com:9200\" npm run debugWithSandbox"
-alias ports_listen="netstat -anvp tcp | awk 'NR<3 || /LISTEN/'"
-alias kill_proc="kill -9 $(lsof -i:9050 -t) 2> /dev/null"
-alias nodekiller="sudo kill -9 `ps aux | grep node | grep -v grep | awk '{print $2}'`"
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-function svault() {
-    export VAULT_ADDR=https://vault.sandbox.k8s.centrio.com:8200
-    export VAULT_HOST=vault.sandbox.k8s.centrio.com:8200
-    export VAULT_TOKEN=$(cat ~/.vault-token)
+# peco
+
+function peco_select_history() {
+    local tac
+    if which tac > /dev/null; then
+        tac="tac"
+    else
+        tac="tail -r"
+    fi
+    BUFFER=$(\history -n 1 | \
+        eval $tac | \
+        peco --query "$LBUFFER")
+    CURSOR=$#BUFFER
 }
 
-export NVM_DIR="/Users/parik/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+zle -N peco_select_history
+bindkey '^r' peco_select_history
 
-# BLEND
-export TZ=UTC
-export PGTZ=UTC
-export NODE_ENV="dev"
-export NO_PICKUP="true"
+# function _peco_change_directory {
+#   if [ (count $argv) ]
+#     peco --layout=bottom-up --query "$argv "|perl -pe 's/([ ()])/\\\\$1/g'|read foo
+#   else
+#     peco --layout=bottom-up |perl -pe 's/([ ()])/\\\\$1/g'|read foo
+#   end
+#   if [ $foo ]
+#     builtin cd $foo
+#     commandline -r ''
+#     commandline -f repaint
+#   else
+#     commandline ''
+#   end
+# end
+# }
 
-# IDENTIY
-export DB_HOST=localhost
-export DB_PASSWORD=devpassword
-export DB_PORT=32861
-export DB_NAME=identity
-export DB_USER=identity_app
+# function peco_change_directory {
+#   begin
+#     echo $HOME/.config
+#     ghq list -p
+#     ls -ad */|perl -pe "s#^#$PWD/#"|grep -v \.git
+#     ls -ad $HOME/Developments/*/* |grep -v \.git
+#   end | sed -e 's/\/$//' | awk '!a[$0]++' | _peco_change_directory $argv
+# end
+# }
 
-# BLEND
+# function fish_user_key_bindings {
+#   # peco
+#   bind \cr peco_select_history # Bind for peco select history to Ctrl+R
+#   bind \cf peco_change_directory # Bind for peco change directory to Ctrl+F
 
-eval "$(starship init zsh)"
+#   # vim-like
+#   bind \cl forward-char
 
+#   # prevent iterm2 from closing when typing Ctrl-D (EOF)
+#   bind \cd delete-char
+# end
+# }
+
+ export NVM_DIR="$HOME/.nvm"
+  [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && . "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
+  [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && . "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"  # This loads nvm bash_completion

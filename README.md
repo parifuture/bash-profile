@@ -1,2 +1,2 @@
-# bash-profile
-default bash profile configuration
+# terminal config
+default zsh profile config
